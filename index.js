@@ -16,13 +16,11 @@ var fs = require('fs')
 var typeMap = {
   css: {
     tag: 'link',
-    template: function (contents, el, noTemplate) {
-      if (noTemplate) return String(contents)
-
+    template: function (contents, el) {
       var attribute = el.attr('media')
       attribute = attribute ? ' media="' + attribute + '" ' : ''
 
-      return '<style' + attribute + '>\n' + String(contents) + '\n</style>'
+      return '<style' + attribute + ' amp-custom>\n' + String(contents) + '\n</style>'
     },
     filter: function (el) {
       return el.attr('rel') === 'stylesheet' && isLocal(el.attr('href'))
@@ -63,11 +61,11 @@ var typeMap = {
 
   svg: {
     tag: ['img', 'svg', 'object'],
-    template: function (contents, el, noTemplate) {
+    template: function (contents, el, applyTemplate) {
+      return String(contents)
+
       var tag = el[0].tagName,
           $ = cheerio.load(String(contents), {decodeEntities: false})
-
-      if (noTemplate) return $.html()
 
       switch (tag) {
         case 'img':
@@ -126,10 +124,10 @@ var typeMap = {
   }
 }
 
-function inject ($, opts, base, cb, typeOpts,relative, ignoredFiles) {
+function inject ($, opts, base, cb, typeOpts, relative, ignoredFiles) {
   var items = []
-  var process = opts ? opts.process : []
-  var applyTemplate = opts ? opts.applyTemplate : true
+  var process = opts && opts.process ? opts.process : []
+  var applyTemplate = opts && opts.applyTemplate ? opts.applyTemplate : true
 
   if (!(process instanceof Array)) {
     process = [opts.process]
@@ -209,9 +207,9 @@ function inline (opts) {
  * Utilities
  */
 
-function replace (el, tmpl) {
+function replace (el, tmpl, applyTemplate) {
   return through.obj(function (file, enc, cb) {
-    el.replaceWith(tmpl(file.contents, el))
+    el.replaceWith(tmpl(file.contents, el, applyTemplate))
     this.push(file)
     cb()
   })
