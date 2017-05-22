@@ -128,12 +128,10 @@ var typeMap = {
 
 function inject ($, opts, base, cb, typeOpts,relative, ignoredFiles) {
   var items = []
-  var process = []
+  var process = opts ? opts.process : []
+  var applyTemplate = opts ? opts.applyTemplate : true
 
-  if (opts && opts.process) {
-    process = opts.process
-  }
-  else if (!(process instanceof Array)) {
+  if (!(process instanceof Array)) {
     process = [opts.process]
   }
 
@@ -164,7 +162,7 @@ function inject ($, opts, base, cb, typeOpts,relative, ignoredFiles) {
           stream = stream.pipe(p)
         }
         stream
-          .pipe(replace(el, typeOpts.template, opts.applyTemplate))
+          .pipe(replace(el, typeOpts.template, applyTemplate))
           .pipe(through.obj(function (file, enc, cb) {
             cb()
           }, done))
