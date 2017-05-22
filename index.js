@@ -130,7 +130,7 @@ function inject ($, opts, base, cb, typeOpts,relative, ignoredFiles) {
   var items = []
   var process = []
 
-  if (opts) {
+  if (opts && opts.process) {
     process = opts.process
   }
   else if (!(process instanceof Array)) {
