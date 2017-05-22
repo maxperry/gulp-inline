@@ -16,7 +16,9 @@ var fs = require('fs')
 var typeMap = {
   css: {
     tag: 'link',
-    template: function (contents, el) {
+    template: function (contents, el, noTemplate) {
+      if (noTemplate) return String(contents)
+
       var attribute = el.attr('media')
       attribute = attribute ? ' media="' + attribute + '" ' : ''
 
@@ -61,9 +63,11 @@ var typeMap = {
 
   svg: {
     tag: ['img', 'svg', 'object'],
-    template: function (contents, el) {
+    template: function (contents, el, noTemplate) {
       var tag = el[0].tagName,
           $ = cheerio.load(String(contents), {decodeEntities: false})
+
+      if (noTemplate) return $.html()
 
       switch (tag) {
         case 'img':
@@ -122,23 +126,24 @@ var typeMap = {
   }
 }
 
-function inject ($, process, base, cb, opts, relative, ignoredFiles) {
+function inject ($, opts, base, cb, typeOpts,relative, ignoredFiles) {
   var items = []
+  var process = []
 
-  if (!process) {
-    process = []
+  if (opts) {
+    process = opts.process
   }
   else if (!(process instanceof Array)) {
-    process = [process]
+    process = [opts.process]
   }
 
   // Normalize tags
-  var tags = opts.tag instanceof Array ? opts.tag : [opts.tag]
+  var tags = typeOpts.tag instanceof Array ? typeOpts.tag : [typeOpts.tag]
 
   tags.forEach(function(tag) {
     $(tag).each(function (idx, el) {
       el = $(el)
-      if (opts.filter(el)) {
+      if (typeOpts.filter(el)) {
         items.push(el)
       }
     })
@@ -147,7 +152,7 @@ function inject ($, process, base, cb, opts, relative, ignoredFiles) {
   if (items.length > 0) {
     var done = after(items.length, cb)
     items.forEach(function (el) {
-      var src = opts.getSrc(el) || ''
+      var src = typeOpts.getSrc(el) || ''
       var file = path.join(src[0] === '/' ? base : relative, src)
 
       if (fs.existsSync(file) && ignoredFiles.indexOf(src) === -1) {
@@ -159,7 +164,7 @@ function inject ($, process, base, cb, opts, relative, ignoredFiles) {
           stream = stream.pipe(p)
         }
         stream
-          .pipe(replace(el, opts.template))
+          .pipe(replace(el, typeOpts.template, opts.applyTemplate))
           .pipe(through.obj(function (file, enc, cb) {
             cb()
           }, done))
