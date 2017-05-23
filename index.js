@@ -61,15 +61,13 @@ var typeMap = {
 
   svg: {
     tag: ['img', 'svg', 'object'],
-    template: function (contents, el, applyTemplate) {
-      return String(contents)
-
+    template: function (contents, el) {
       var tag = el[0].tagName,
           $ = cheerio.load(String(contents), {decodeEntities: false})
 
       switch (tag) {
         case 'img':
-          $('svg').attr(without(el.attr(), 'src'))
+          $('svg').attr(without(el.attr(), ['src', 'alt']))
           break
         case 'object':
           $('svg').attr(without(el.attr(), 'data'))
@@ -127,7 +125,6 @@ var typeMap = {
 function inject ($, opts, base, cb, typeOpts, relative, ignoredFiles) {
   var items = []
   var process = opts && opts.process ? opts.process : []
-  var applyTemplate = opts && opts.applyTemplate ? opts.applyTemplate : true
 
   if (!(process instanceof Array)) {
     process = [opts.process]
@@ -160,7 +157,7 @@ function inject ($, opts, base, cb, typeOpts, relative, ignoredFiles) {
           stream = stream.pipe(p)
         }
         stream
-          .pipe(replace(el, typeOpts.template, applyTemplate))
+          .pipe(replace(el, typeOpts.template))
           .pipe(through.obj(function (file, enc, cb) {
             cb()
           }, done))
